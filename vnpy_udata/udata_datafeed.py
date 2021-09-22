@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import List, Optional
+from numpy.lib.arraysetops import _setdiff1d_dispatcher
 from pytz import timezone
 
 from numpy import ndarray
@@ -12,6 +13,14 @@ from vnpy.trader.object import BarData, TickData, HistoryRequest
 from vnpy.trader.utility import round_to
 from vnpy.trader.datafeed import BaseDatafeed
 
+
+EXCHANGE_VT2UDATA = {
+    Exchange.CFFEX: "CFE",
+    Exchange.SHFE: "SHF",
+    Exchange.DCE: "DCE",
+    Exchange.CZCE: "CZC",
+    Exchange.INE: "INE"
+}
 
 INTERVAL_VT2RQ = {
     Interval.MINUTE: "1m",
@@ -30,7 +39,8 @@ CHINA_TZ = timezone("Asia/Shanghai")
 
 def convert_symbol(symbol: str, exchange: Exchange) -> str:
     """将交易所代码转换为UData代码"""
-    return f"{symbol}.{exchange.value}"
+    exchange_str = EXCHANGE_VT2UDATA.get(exchange, "")
+    return f"{symbol.upper()}.{exchange_str}"
 
 
 class UdataDatafeed(BaseDatafeed):
