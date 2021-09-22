@@ -1,0 +1,8 @@
+system:
+  compressor: null
+  connect_timeout: 5
+  page_size: 100000
+  pool_size: 10
+  protocol: HTTP
+  request_timeout: 300
+  url: https://udata.hs.net/udata/business/v1/app_services
