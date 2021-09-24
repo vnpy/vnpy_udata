@@ -44,3 +44,14 @@ pip install vnpy_udata
 ```
 python setup.py install
 ```
+
+
+## 使用
+
+在vn.py中使用恒生UData时，需要在全局配置中填写以下字段信息：
+
+|名称|含义|必填|举例|
+|---------|----|---|---|
+|datafeed.name|名称|是|udata|
+|datafeed.username|用户名|否|token|
+|datafeed.password|密码|是|mo-kWW7Jjyq1-bjAAhQcz1z7YsJS6BkY3XazSAC-81jWW3294|
