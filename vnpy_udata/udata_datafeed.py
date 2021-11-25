@@ -67,7 +67,7 @@ class UdataDatafeed(BaseDatafeed):
             return None
 
         # 期货
-        if req.exchange in { 
+        if req.exchange in {
             Exchange.CFFEX,
             Exchange.SHFE,
             Exchange.CZCE,
@@ -115,13 +115,13 @@ class UdataDatafeed(BaseDatafeed):
                     exchange=exchange,
                     interval=interval,
                     datetime=dt,
-                    open_price=row.open,
-                    high_price=row.high,
-                    low_price=row.low,
-                    close_price=row.close,
-                    volume=row.turnover_volume,
-                    turnover=row.turnover_value,
-                    open_interest=row.amount,
+                    open_price=float(row.open),
+                    high_price=float(row.high),
+                    low_price=float(row.low),
+                    close_price=float(row.close),
+                    volume=float(row.turnover_volume),
+                    turnover=float(row.turnover_value),
+                    open_interest=float(row.amount),
                     gateway_name="UDATA"
                 )
 
@@ -159,12 +159,12 @@ class UdataDatafeed(BaseDatafeed):
                     exchange=exchange,
                     interval=interval,
                     datetime=dt,
-                    open_price=row.open,
-                    high_price=row.high,
-                    low_price=row.low,
-                    close_price=row.close,
-                    volume=row.turnover_volume,
-                    turnover=row.turnover_value,
+                    open_price=float(row.open),
+                    high_price=float(row.high),
+                    low_price=float(row.low),
+                    close_price=float(row.close),
+                    volume=float(row.turnover_volume),
+                    turnover=float(row.turnover_value),
                     gateway_name="UDATA"
                 )
 
