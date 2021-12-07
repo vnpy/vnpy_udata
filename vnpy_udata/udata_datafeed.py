@@ -9,6 +9,7 @@ from vnpy.trader.setting import SETTINGS
 from vnpy.trader.constant import Exchange, Interval
 from vnpy.trader.object import BarData, HistoryRequest
 from vnpy.trader.datafeed import BaseDatafeed
+from time import sleep
 
 
 EXCHANGE_VT2UDATA = {
@@ -58,7 +59,6 @@ class UdataDatafeed(BaseDatafeed):
         return True
 
     def query_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
-        """查询K线数据"""
         if not self.inited:
             self.init()
 
@@ -66,24 +66,42 @@ class UdataDatafeed(BaseDatafeed):
         if req.interval != Interval.MINUTE:
             return None
 
-        # 期货
-        if req.exchange in {
-            Exchange.CFFEX,
-            Exchange.SHFE,
-            Exchange.CZCE,
-            Exchange.DCE,
-            Exchange.INE
-        }:
-            return self.query_futures_bar_history(req)
-        # 股票
-        elif req.exchange in {
-            Exchange.SSE,
-            Exchange.SZSE
-        }:
-            return self.query_equity_bar_history(req)
-        # 其他
-        else:
-            return None
+        data: List[BarData] = []
+        
+        end = req.end.date()
+
+        while True:
+            # 期货
+            if req.exchange in { 
+                Exchange.CFFEX,
+                Exchange.SHFE,
+                Exchange.CZCE,
+                Exchange.DCE,
+                Exchange.INE
+            }:
+                temp_data = self.query_futures_bar_history(req)
+                
+                data.extend(temp_data)
+                if temp_data[-1].datetime >= end:
+                    break
+                req.start = temp_data[-1].datetime
+                sleep(3)
+            # 股票
+            elif req.exchange in {
+                Exchange.SSE,
+                Exchange.SZSE
+            }:
+                temp_data = self.query_equity_bar_history(req)
+                
+                data.extend(temp_data)
+                if temp_data[-1].datetime.date() >= end:
+                    break
+                req.start = temp_data[-1].datetime.date()
+                sleep(3)
+            # 其他
+            else:
+                return None
+        return data
 
     def query_futures_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
         """查询期货分钟K线数据"""
@@ -115,13 +133,13 @@ class UdataDatafeed(BaseDatafeed):
                     exchange=exchange,
                     interval=interval,
                     datetime=dt,
-                    open_price=float(row.open),
-                    high_price=float(row.high),
-                    low_price=float(row.low),
-                    close_price=float(row.close),
-                    volume=float(row.turnover_volume),
-                    turnover=float(row.turnover_value),
-                    open_interest=float(row.amount),
+                    open_price=row.open,
+                    high_price=row.high,
+                    low_price=row.low,
+                    close_price=row.close,
+                    volume=row.turnover_volume,
+                    turnover=row.turnover_value,
+                    open_interest=row.amount,
                     gateway_name="UDATA"
                 )
 
@@ -159,15 +177,17 @@ class UdataDatafeed(BaseDatafeed):
                     exchange=exchange,
                     interval=interval,
                     datetime=dt,
-                    open_price=float(row.open),
-                    high_price=float(row.high),
-                    low_price=float(row.low),
-                    close_price=float(row.close),
-                    volume=float(row.turnover_volume),
-                    turnover=float(row.turnover_value),
+                    open_price=row.open,
+                    high_price=row.high,
+                    low_price=row.low,
+                    close_price=row.close,
+                    volume=row.turnover_volume,
+                    turnover=row.turnover_value,
                     gateway_name="UDATA"
                 )
 
                 data.append(bar)
 
         return data
+
+
