@@ -82,7 +82,7 @@ class UdataDatafeed(BaseDatafeed):
                 temp_data = self.query_futures_bar_history(req)
                 
                 data.extend(temp_data)
-                if temp_data[-1].datetime >= end:
+                if temp_data[-1].datetime.date() >= end:
                     break
                 req.start = temp_data[-1].datetime
                 sleep(3)
