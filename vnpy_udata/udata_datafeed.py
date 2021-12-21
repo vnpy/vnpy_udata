@@ -81,7 +81,7 @@ class UdataDatafeed(BaseDatafeed):
                 Exchange.INE
             }:
                 temp_data = self.query_futures_bar_history(req)
-                if len(temp_data) == 0:
+                if not temp_data:
                     return data
                 data.extend(temp_data)
                 if temp_data[-1].datetime.date() >= end or len(temp_data) != 10000:
@@ -94,7 +94,7 @@ class UdataDatafeed(BaseDatafeed):
                 Exchange.SZSE
             }:
                 temp_data = self.query_equity_bar_history(req)
-                if len(temp_data) == 0:
+                if not temp_data:
                     return data
                 data.extend(temp_data)
                 if temp_data[-1].datetime.date() >= end or len(temp_data) != 10000:
