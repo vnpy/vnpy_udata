@@ -1,5 +1,5 @@
-from datetime import datetime, timedelta
-from typing import List, Optional
+from datetime import datetime, timedelta, date
+from typing import Dict, List, Optional
 from pytz import timezone
 
 from hs_udata import set_token, fut_quote_minute, stock_quote_minutes
@@ -12,7 +12,7 @@ from vnpy.trader.datafeed import BaseDatafeed
 from time import sleep
 
 
-EXCHANGE_VT2UDATA = {
+EXCHANGE_VT2UDATA: Dict[Exchange, str] = {
     Exchange.CFFEX: "CFE",
     Exchange.SHFE: "SHF",
     Exchange.DCE: "DCE",
@@ -22,13 +22,13 @@ EXCHANGE_VT2UDATA = {
     Exchange.SZSE: "SZ"
 }
 
-INTERVAL_VT2RQ = {
+INTERVAL_VT2RQ: Dict[Interval, str] = {
     Interval.MINUTE: "1m",
     Interval.HOUR: "60m",
     Interval.DAILY: "1d",
 }
 
-INTERVAL_ADJUSTMENT_MAP = {
+INTERVAL_ADJUSTMENT_MAP: Dict[Interval, timedelta] = {
     Interval.MINUTE: timedelta(minutes=1),
     Interval.HOUR: timedelta(hours=1),
     Interval.DAILY: timedelta()         # no need to adjust for daily bar
@@ -40,7 +40,7 @@ CHINA_TZ = timezone("Asia/Shanghai")
 
 def convert_symbol(symbol: str, exchange: Exchange) -> str:
     """将交易所代码转换为UData代码"""
-    exchange_str = EXCHANGE_VT2UDATA.get(exchange, "")
+    exchange_str: str = EXCHANGE_VT2UDATA.get(exchange, "")
     return f"{symbol.upper()}.{exchange_str}"
 
 
@@ -69,7 +69,7 @@ class UdataDatafeed(BaseDatafeed):
 
         data: List[BarData] = []
         
-        end = req.end.date()
+        end: date = req.end.date()
 
         while True:
             # 期货
@@ -80,7 +80,7 @@ class UdataDatafeed(BaseDatafeed):
                 Exchange.DCE,
                 Exchange.INE
             }:
-                temp_data = self.query_futures_bar_history(req)
+                temp_data: List[BarData] = self.query_futures_bar_history(req)
                 if not temp_data:
                     return data
                 data.extend(temp_data)
@@ -93,7 +93,7 @@ class UdataDatafeed(BaseDatafeed):
                 Exchange.SSE,
                 Exchange.SZSE
             }:
-                temp_data = self.query_equity_bar_history(req)
+                temp_data: List[BarData] = self.query_equity_bar_history(req)
                 if not temp_data:
                     return data
                 data.extend(temp_data)
@@ -108,14 +108,14 @@ class UdataDatafeed(BaseDatafeed):
 
     def query_futures_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
         """查询期货分钟K线数据"""
-        symbol = req.symbol
-        exchange = req.exchange
-        interval = req.interval
-        start = req.start
-        end = req.end
+        symbol: str = req.symbol
+        exchange: Exchange = req.exchange
+        interval: Interval = req.interval
+        start: datetime = req.start
+        end: datetime = req.end
 
-        udata_symbol = convert_symbol(symbol, exchange)
-        adjustment = timedelta(minutes=1)
+        udata_symbol: str = convert_symbol(symbol, exchange)
+        adjustment: timedelta = timedelta(minutes=1)
 
         df: DataFrame = fut_quote_minute(
             en_prod_code=udata_symbol,
@@ -127,11 +127,11 @@ class UdataDatafeed(BaseDatafeed):
 
         if len(df):
             for _, row in df.iterrows():
-                timestr = f"{row.date} {str(row.time).rjust(4, '0')}"
-                dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
-                dt = CHINA_TZ.localize(dt)
+                timestr: str = f"{row.date} {str(row.time).rjust(4, '0')}"
+                dt: datetime = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
+                dt: datetime = CHINA_TZ.localize(dt)
 
-                bar = BarData(
+                bar: BarData = BarData(
                     symbol=symbol,
                     exchange=exchange,
                     interval=interval,
@@ -152,14 +152,14 @@ class UdataDatafeed(BaseDatafeed):
 
     def query_equity_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
         """查询股票分钟K线数据"""
-        symbol = req.symbol
-        exchange = req.exchange
-        interval = req.interval
-        start = req.start
-        end = req.end
+        symbol: str = req.symbol
+        exchange: Exchange = req.exchange
+        interval: Interval = req.interval
+        start: datetime = req.start
+        end: datetime = req.end
 
-        udata_symbol = convert_symbol(symbol, exchange)
-        adjustment = timedelta(minutes=1)
+        udata_symbol: str = convert_symbol(symbol, exchange)
+        adjustment: timedelta = timedelta(minutes=1)
 
         df: DataFrame = stock_quote_minutes(
             en_prod_code=udata_symbol,
@@ -171,11 +171,11 @@ class UdataDatafeed(BaseDatafeed):
 
         if len(df):
             for _, row in df.iterrows():
-                timestr = f"{row.date} {str(row.time).rjust(4, '0')}"
-                dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
-                dt = CHINA_TZ.localize(dt)
+                timestr: str = f"{row.date} {str(row.time).rjust(4, '0')}"
+                dt: datetime = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
+                dt: datetime = CHINA_TZ.localize(dt)
 
-                bar = BarData(
+                bar: BarData = BarData(
                     symbol=symbol,
                     exchange=exchange,
                     interval=interval,
