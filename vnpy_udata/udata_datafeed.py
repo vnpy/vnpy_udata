@@ -98,7 +98,6 @@ class UdataDatafeed(BaseDatafeed):
         end = req.end
 
         udata_symbol = convert_symbol(symbol, exchange)
-        adjustment = timedelta(minutes=1)
 
         if req.exchange in FUTURE_EXCHANGES:
             df: DataFrame = fut_quote_minute(
@@ -125,9 +124,7 @@ class UdataDatafeed(BaseDatafeed):
 
         if len(df):
             for _, row in df.iterrows():
-                timestr = f"{row.date} {str(row.time).rjust(4, '0')}"
-                dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
-                dt = dt.replace(tzinfo=CHINA_TZ)
+                dt: datetime = generate_datetime(row.date, row.time)
 
                 bar = BarData(
                     symbol=symbol,
@@ -151,3 +148,15 @@ class UdataDatafeed(BaseDatafeed):
                 data.append(bar)
 
         return data
+
+
+def generate_datetime(self, date: str, time: int, adjusted: bool = True) -> datetime:
+    """生成本地时间"""
+    timestr = f"{date} {str(time).rjust(4, '0')}"
+    if adjusted:
+        adjustment: timedelta = timedelta(minutes=1)
+        dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
+    else:
+        dt = datetime.strptime(timestr, "%Y-%m-%d %H%M")
+    dt = dt.replace(tzinfo=CHINA_TZ)
+    return dt
