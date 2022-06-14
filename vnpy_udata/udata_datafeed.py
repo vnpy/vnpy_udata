@@ -2,7 +2,7 @@ from datetime import datetime, timedelta, time
 from typing import List, Optional
 from pytz import timezone
 
-from hs_udata import set_token, fut_quote_minute, stock_quote_minutes
+from hs_udata import set_token, fut_quote_minute, stock_quote_minutes, hk_minutes_hkscc
 from pandas import DataFrame
 
 from vnpy.trader.setting import SETTINGS
@@ -19,7 +19,8 @@ EXCHANGE_VT2UDATA = {
     Exchange.CZCE: "CZC",
     Exchange.INE: "INE",
     Exchange.SSE: "SH",
-    Exchange.SZSE: "SZ"
+    Exchange.SZSE: "SZ",
+    Exchange.SEHK: "HK"
 }
 
 INTERVAL_VT2RQ = {
@@ -108,6 +109,13 @@ class UdataDatafeed(BaseDatafeed):
 
         elif req.exchange in {Exchange.SSE, Exchange.SZSE}:
             df: DataFrame = stock_quote_minutes(
+                en_prod_code=udata_symbol,
+                begin_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d")
+            )
+
+        else:
+            df: DataFrame = hk_minutes_hkscc(
                 en_prod_code=udata_symbol,
                 begin_date=start.strftime("%Y-%m-%d"),
                 end_date=end.strftime("%Y-%m-%d")
