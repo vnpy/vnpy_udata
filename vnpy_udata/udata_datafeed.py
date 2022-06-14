@@ -1,6 +1,6 @@
 from datetime import datetime, timedelta, time
 from typing import List, Optional
-from pytz import timezone
+from time import sleep
 
 from hs_udata import set_token, fut_quote_minute, stock_quote_minutes, hk_minutes_hkscc
 from pandas import DataFrame
@@ -9,7 +9,7 @@ from vnpy.trader.setting import SETTINGS
 from vnpy.trader.constant import Exchange, Interval
 from vnpy.trader.object import BarData, HistoryRequest
 from vnpy.trader.datafeed import BaseDatafeed
-from time import sleep
+from vnpy.trader.utility import ZoneInfo
 
 
 EXCHANGE_VT2UDATA = {
@@ -36,7 +36,7 @@ INTERVAL_ADJUSTMENT_MAP = {
 }
 
 
-CHINA_TZ = timezone("Asia/Shanghai")
+CHINA_TZ = ZoneInfo("Asia/Shanghai")
 
 FUTURE_EXCHANGES: list = [Exchange.CFFEX, Exchange.SHFE, Exchange.DCE, Exchange.CZCE, Exchange.INE]
 
@@ -127,7 +127,7 @@ class UdataDatafeed(BaseDatafeed):
             for _, row in df.iterrows():
                 timestr = f"{row.date} {str(row.time).rjust(4, '0')}"
                 dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
-                dt = CHINA_TZ.localize(dt)
+                dt = dt.replace(tzinfo=CHINA_TZ)
 
                 bar = BarData(
                     symbol=symbol,
