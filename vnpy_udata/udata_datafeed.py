@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, time
 from typing import List, Optional
 from pytz import timezone
 
@@ -37,6 +37,8 @@ INTERVAL_ADJUSTMENT_MAP = {
 
 CHINA_TZ = timezone("Asia/Shanghai")
 
+FUTURE_EXCHANGES: list = [Exchange.CFFEX, Exchange.SHFE, Exchange.DCE, Exchange.CZCE, Exchange.INE]
+
 
 def convert_symbol(symbol: str, exchange: Exchange) -> str:
     """将交易所代码转换为UData代码"""
@@ -68,19 +70,12 @@ class UdataDatafeed(BaseDatafeed):
             return None
 
         data: List[BarData] = []
-        
+
         end = req.end.date()
 
         while True:
-            # 期货
-            if req.exchange in { 
-                Exchange.CFFEX,
-                Exchange.SHFE,
-                Exchange.CZCE,
-                Exchange.DCE,
-                Exchange.INE
-            }:
-                temp_data = self.query_futures_bar_history(req)
+            if req.exchange in EXCHANGE_VT2UDATA:
+                temp_data = self.query_bar_data(req)
                 if not temp_data:
                     return data
                 data.extend(temp_data)
@@ -88,26 +83,13 @@ class UdataDatafeed(BaseDatafeed):
                     break
                 req.start = temp_data[-1].datetime
                 sleep(3)
-            # 股票
-            elif req.exchange in {
-                Exchange.SSE,
-                Exchange.SZSE
-            }:
-                temp_data = self.query_equity_bar_history(req)
-                if not temp_data:
-                    return data
-                data.extend(temp_data)
-                if temp_data[-1].datetime.date() >= end or len(temp_data) != 10000:
-                    break
-                req.start = temp_data[-1].datetime
-                sleep(3)
-            # 其他
+
             else:
                 return None
         return data
 
-    def query_futures_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
-        """查询期货分钟K线数据"""
+    def query_bar_data(self, req: HistoryRequest) -> Optional[List[BarData]]:
+        """查询分钟K线数据"""
         symbol = req.symbol
         exchange = req.exchange
         interval = req.interval
@@ -117,55 +99,19 @@ class UdataDatafeed(BaseDatafeed):
         udata_symbol = convert_symbol(symbol, exchange)
         adjustment = timedelta(minutes=1)
 
-        df: DataFrame = fut_quote_minute(
-            en_prod_code=udata_symbol,
-            begin_date=start.strftime("%Y-%m-%d"),
-            end_date=end.strftime("%Y-%m-%d")
-        )
+        if req.exchange in FUTURE_EXCHANGES:
+            df: DataFrame = fut_quote_minute(
+                en_prod_code=udata_symbol,
+                begin_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d")
+            )
 
-        data: List[BarData] = []
-
-        if len(df):
-            for _, row in df.iterrows():
-                timestr = f"{row.date} {str(row.time).rjust(4, '0')}"
-                dt = datetime.strptime(timestr, "%Y-%m-%d %H%M") - adjustment
-                dt = CHINA_TZ.localize(dt)
-
-                bar = BarData(
-                    symbol=symbol,
-                    exchange=exchange,
-                    interval=interval,
-                    datetime=dt,
-                    open_price=row.open,
-                    high_price=row.high,
-                    low_price=row.low,
-                    close_price=row.close,
-                    volume=row.turnover_volume,
-                    turnover=row.turnover_value,
-                    open_interest=row.amount,
-                    gateway_name="UDATA"
-                )
-
-                data.append(bar)
-
-        return data
-
-    def query_equity_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
-        """查询股票分钟K线数据"""
-        symbol = req.symbol
-        exchange = req.exchange
-        interval = req.interval
-        start = req.start
-        end = req.end
-
-        udata_symbol = convert_symbol(symbol, exchange)
-        adjustment = timedelta(minutes=1)
-
-        df: DataFrame = stock_quote_minutes(
-            en_prod_code=udata_symbol,
-            begin_date=start.strftime("%Y-%m-%d"),
-            end_date=end.strftime("%Y-%m-%d")
-        )
+        elif req.exchange in {Exchange.SSE, Exchange.SZSE}:
+            df: DataFrame = stock_quote_minutes(
+                en_prod_code=udata_symbol,
+                begin_date=start.strftime("%Y-%m-%d"),
+                end_date=end.strftime("%Y-%m-%d")
+            )
 
         data: List[BarData] = []
 
@@ -188,9 +134,12 @@ class UdataDatafeed(BaseDatafeed):
                     turnover=row.turnover_value,
                     gateway_name="UDATA"
                 )
+                if req.exchange in FUTURE_EXCHANGES:
+                    bar.open_interest = row.amount
+                else:
+                    if dt.time() == time(hour=9, minute=29):
+                        continue
 
                 data.append(bar)
 
         return data
-
-
