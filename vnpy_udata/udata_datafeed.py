@@ -23,18 +23,6 @@ EXCHANGE_VT2UDATA = {
     Exchange.SEHK: "HK"
 }
 
-INTERVAL_VT2RQ = {
-    Interval.MINUTE: "1m",
-    Interval.HOUR: "60m",
-    Interval.DAILY: "1d",
-}
-
-INTERVAL_ADJUSTMENT_MAP = {
-    Interval.MINUTE: timedelta(minutes=1),
-    Interval.HOUR: timedelta(hours=1),
-    Interval.DAILY: timedelta()         # no need to adjust for daily bar
-}
-
 
 CHINA_TZ = ZoneInfo("Asia/Shanghai")
 
