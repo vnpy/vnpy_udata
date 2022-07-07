@@ -1,6 +1,5 @@
 from datetime import datetime, timedelta, time
 from typing import List, Optional
-from time import sleep
 
 from hs_udata import set_token, fut_quote_minute, stock_quote_minutes, hk_minutes_hkscc
 from pandas import DataFrame
@@ -59,20 +58,21 @@ class UdataDatafeed(BaseDatafeed):
             return None
 
         data: List[BarData] = []
-
-        end = req.end.date()
+        end: datetime = req.end
 
         while True:
             if req.exchange in EXCHANGE_VT2UDATA:
                 temp_data = self.query_bar_data(req)
-                if not temp_data:
-                    return data
-                data.extend(temp_data)
-                if temp_data[-1].datetime.date() >= end or len(temp_data) != 10000:
-                    break
-                req.start = temp_data[-1].datetime
-                sleep(3)
-
+                if temp_data:
+                    data.extend(temp_data)
+                    if temp_data[0].datetime.date() == temp_data[-1].datetime.date():
+                        break
+                    req.start = temp_data[-1].datetime + timedelta(days=1)
+                else:
+                    if req.end >= end:
+                        return data
+                    else:
+                        req.start = req.end + timedelta(days=1)
             else:
                 return None
         return data
@@ -83,7 +83,7 @@ class UdataDatafeed(BaseDatafeed):
         exchange = req.exchange
         interval = req.interval
         start = req.start
-        end = req.end
+        req.end = req.start + timedelta(days=30)
 
         udata_symbol = convert_symbol(symbol, exchange)
         adjustment = timedelta(minutes=1)
@@ -92,21 +92,21 @@ class UdataDatafeed(BaseDatafeed):
             df: DataFrame = fut_quote_minute(
                 en_prod_code=udata_symbol,
                 begin_date=start.strftime("%Y-%m-%d"),
-                end_date=end.strftime("%Y-%m-%d")
+                end_date=req.end.strftime("%Y-%m-%d")
             )
 
         elif req.exchange in {Exchange.SSE, Exchange.SZSE}:
             df: DataFrame = stock_quote_minutes(
                 en_prod_code=udata_symbol,
                 begin_date=start.strftime("%Y-%m-%d"),
-                end_date=end.strftime("%Y-%m-%d")
+                end_date=req.end.strftime("%Y-%m-%d")
             )
 
         else:
             df: DataFrame = hk_minutes_hkscc(
                 en_prod_code=udata_symbol,
                 begin_date=start.strftime("%Y-%m-%d"),
-                end_date=end.strftime("%Y-%m-%d")
+                end_date=req.end.strftime("%Y-%m-%d")
             )
 
         data: List[BarData] = []
