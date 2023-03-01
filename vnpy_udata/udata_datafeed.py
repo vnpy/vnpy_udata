@@ -1,5 +1,5 @@
 from datetime import datetime, timedelta, time
-from typing import List, Optional
+from typing import List, Optional, Callable
 
 from hs_udata import set_token, fut_quote_minute, stock_quote_minutes, hk_minutes_hkscc
 from pandas import DataFrame
@@ -43,18 +43,19 @@ class UdataDatafeed(BaseDatafeed):
 
         self.inited: bool = False
 
-    def init(self) -> bool:
+    def init(self, output: Callable = print) -> bool:
         """初始化"""
         set_token(self.token)
         self.inited = True
         return True
 
-    def query_bar_history(self, req: HistoryRequest) -> Optional[List[BarData]]:
+    def query_bar_history(self, req: HistoryRequest, output: Callable = print) -> Optional[List[BarData]]:
         if not self.inited:
             self.init()
 
         # 只支持分钟线
         if req.interval != Interval.MINUTE:
+            output("UData数据服务获取K线数据失败：目前只支持1分钟周期K线！")
             return None
 
         data: List[BarData] = []
@@ -74,6 +75,7 @@ class UdataDatafeed(BaseDatafeed):
                     else:
                         req.start = req.end + timedelta(days=1)
             else:
+                output(f"UData数据服务获取K线数据失败：不支持的交易所{req.exchange.value}！")
                 return None
         return data
 
